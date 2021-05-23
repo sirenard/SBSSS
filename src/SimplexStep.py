@@ -1,5 +1,6 @@
-import numpy as np
 from fractions import Fraction
+
+import numpy as np
 
 
 class SimplexStep:
@@ -16,11 +17,12 @@ class SimplexStep:
 
     def __str__(self):
         labels = ["Var. en base", "z"] + list(self.x.T) + ["Solution"]
-        head = " | ".join([":--:"]*(3+len(list(self.x.T))))
-        z = ["z", -self.optimize] + list(self.c.T[0]) + [self.obj]
+        head = " | ".join([":--:"] * (3 + len(list(self.x.T))))
+        z = ["z", self.optimize] + list(self.c.T[0]) + [self.obj]
         z = list(map(create_fraction, z))
 
-        matrix = [list(map(create_fraction,[self.x[self.base[i]], 0] + list(self.A[i]) + [self.sol[i,0]])) for i in range(self.A.shape[0])]
+        matrix = [list(map(create_fraction, [self.x[self.base[i]], 0] + list(self.A[i]) + [self.sol[i, 0]])) for i in
+                  range(self.A.shape[0])]
 
         if self.out_variable is not None:
             index = list(self.base).index(self.out_variable)
@@ -34,8 +36,8 @@ class SimplexStep:
 
         return res
 
+
 def create_fraction(n):
-    if type(n) in [float,int, np.float64]:
+    if type(n) in [float, int, np.float64]:
         return str(Fraction(n).limit_denominator())
     return n
-
