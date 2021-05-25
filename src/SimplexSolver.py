@@ -6,7 +6,7 @@ from SimplexStep import SimplexStep
 
 
 class SimplexSolver:
-    def __init__(self, c, A, b, x=None, optimize=-1):
+    def __init__(self, c, A, b, x=None, optimize=-1, two_phase=False):
         """
         initialize solver to solve a linear problem like:
         max/min c^T x
@@ -20,12 +20,16 @@ class SimplexSolver:
         :param optimize: 1 if maximize, -1 if minimize
         """
         self.A = np.array(A, dtype="float64")
+        self.Ab = None
+        self.An = None
         self.init_A = np.copy(self.A)
         self.m, self.n = self.A.shape
-        assert self.n > self.m, "You need more variables than constraints "
+        assert self.n >= self.m, "You need more variables than constraints "
         assert optimize in [1, -1], "optimize must be 1 or -1"
         self.optimize = optimize
         self.c = np.array(c, dtype="float64")[np.newaxis].T
+        self.cb = None
+        self.cn = None
         self.init_c = np.copy(self.c)
         self.b = np.array(b, dtype="float64")[np.newaxis].T
 
@@ -40,6 +44,9 @@ class SimplexSolver:
         self.obj = 0
         self.steps = []  # save of every steps
 
+        self.two_phase = two_phase
+        self.two_phase_simplex = None
+
     def solve(self):
         self.find_init_base()
 
@@ -50,6 +57,7 @@ class SimplexSolver:
             self.steps.append(
                 SimplexStep(self.A, self.x, self.c, self.base, self.obj, self.var_base_value, var_in, var_out,
                             self.optimize))
+
             if var_in is None:
                 is_opti = True
             else:
@@ -83,7 +91,6 @@ class SimplexSolver:
             current = float('inf')
             for m in range(self.m):
                 a = self.A[m, in_variable]
-
                 if a > 0 and self.var_base_value[m, 0] / a < current:
                     current = self.var_base_value[m, 0] / a
                     out_variable = self.base[m]
@@ -97,27 +104,91 @@ class SimplexSolver:
         self.base = []
         self.var_base_value = []
         sol = []
+        cols = []
+
         while len(self.base) != self.m and var != self.n:
             col = self.A[:, var]  # get a column
             non_zero = np.flatnonzero(col)
-            if len(non_zero) == 1:  # if only 1 no zero in column -> var can be in base
-                constraint_index = non_zero[0]  # index of the constraints where the variable appear
+            constraint_index = non_zero[0]  # index of the constraints where the variable appear
+            if len(non_zero) == 1 and self.A[
+                constraint_index, var] > 0:  # if only 1 no zero in column -> var can be in base
 
+                cols.append(constraint_index)
                 self.base.append(var)
                 self.var_base_value.append(self.b[constraint_index, 0] / self.A[constraint_index, var])
+
                 sol.append(self.var_base_value[-1])
                 self.A[constraint_index] /= self.A[constraint_index, var]
             else:  # variable not in base
                 sol.append(0)
             var += 1
 
-        self.var_base_value = np.array(self.var_base_value)[np.newaxis].T
-        self.obj = int(np.dot(self.c.T, sol))
+        if len(self.base) != self.m and not self.two_phase:  # no initial solution found
+            self.two_phase_find_init_base(cols)
+
+        assert len(self.base) == self.m, "Initial base not found"
+
+        if self.two_phase:
+            self.A = self.A[cols, :]
+            self.b = self.b[cols, :]
+
+        var_not_base = list(set(range(self.n)) - set(self.base))
+        self.Ab = self.A[:, self.base]
+        self.An = self.A[:, var_not_base]
+
+        self.cb = np.array(self.c[self.base, :], dtype="float64")
+        self.cn = np.array(self.c[var_not_base, :], dtype="float64")
+
+        tmp_c = self.cn.T - np.dot(np.dot(self.cb.T, np.linalg.inv(self.Ab)), self.An)
+        self.c *= 0
+
+        pos = 0
+        for i in var_not_base:
+            self.c[i, 0] = tmp_c[0, pos]
+            pos += 1
+
+        self.c *= -self.optimize
+
+        self.var_base_value = np.dot(np.linalg.inv(self.Ab), self.b)
+        self.obj = self.optimize * np.dot(self.cb.T, self.var_base_value)[0, 0]
+
+    def two_phase_find_init_base(self, list_column=[]):
+        A = np.append(self.A, np.eye(self.m), axis=1)
+        x = self.x[:] + ["R{}".format(i) for i in range(self.m - len(self.base))]
+        c = [0] * self.n + [1] * self.m
+
+        count = 0
+        for i in list_column:
+            col_index = self.n - count + i
+            A = np.delete(A, col_index, 1)
+            c = c[:col_index] + c[col_index + 1:]
+            count += 1
+
+        b = self.b[:, 0]
+
+        two_phase_simplex = SimplexSolver(c, A, b, x, 1, True)
+        two_phase_simplex.solve()
+        if two_phase_simplex.obj == 0:
+            self.A = two_phase_simplex.A[:, :self.n]
+            self.b = two_phase_simplex.var_base_value
+            self.base = two_phase_simplex.base
+            self.var_base_value = two_phase_simplex.var_base_value
+
+        self.two_phase_simplex = two_phase_simplex
+
+        return two_phase_simplex.obj
 
     def __str__(self):
-        res = "# Formulation\n" + self._formulation_str()
-        res += "# Resolution\n" + self._resolution_str()
-        res += "# Optimal Solution\n" + self._solution_str()
+        if not self.two_phase:
+            res = "# Formulation\n" + self._formulation_str()
+        else:
+            res = "## Formulation 2 phase\n" + self._formulation_str()
+
+        if self.two_phase_simplex is not None:
+            res += str(self.two_phase_simplex)
+        if len(self.steps):
+            res += "#"*self.two_phase +"# Resolution\n" + self._resolution_str()
+        res += "#"*self.two_phase +"# Optimal Solution\n" + self._solution_str()
 
         return res
 
@@ -125,7 +196,7 @@ class SimplexSolver:
         res = ""
         for i in range(len(self.steps)):
             step = self.steps[i]
-            res += "## Iteration {}\n".format(i + 1)
+            res += "#"*self.two_phase +"## Iteration {}\n".format(i + 1)
             res += str(step) + "\n"
 
         return res
@@ -145,8 +216,10 @@ class SimplexSolver:
             addition = []
             for j in range(self.n):
                 if self.init_A[i, j] != 0:
-                    addition.append("{} {}".format(Fraction(self.init_A[i, j]).limit_denominator(), self.x[i]))
-            res += "- " + " + ".join(addition) + " = {}\n".format(self.b[i, 0])
+                    addition.append("{} {}".format(Fraction(self.init_A[i, j]).limit_denominator(), self.x[j]))
+            constraint = "* " + " + ".join(addition) + " = {}\n".format(self.b[i, 0])
+            constraint = constraint.replace("+ -", "- ")
+            res += constraint
 
         return res
 
@@ -175,6 +248,16 @@ if __name__ == "__main__":
     b = [24, 6, 2, 1]
 
     simplex_solver = SimplexSolver(c, A, b, ["x1", "x2", "s1", "s2", "s3", "s4"])
+
+    c = [30, 40, 0, 0, 0]
+    A = [
+        [1, 2, -1, 0, 0],
+        [2, 2, 0, -1, 0],
+        [1, 0, 0, 0, 1]
+    ]
+    b = [8, 11, 5]
+    x = ["x_1", "x_2", "s_1", "s_2", "s_3"]
+    #simplex_solver = SimplexSolver(c, A, b, x, 1)
 
     # simplex_solver.find_init_base()
     # print(simplex_solver.base)
