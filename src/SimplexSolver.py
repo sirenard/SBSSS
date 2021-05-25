@@ -104,7 +104,7 @@ class SimplexSolver:
         self.base = []
         self.var_base_value = []
         sol = []
-        cols = []
+        cols = [] # keep the number column that correspond with the base variable
 
         while len(self.base) != self.m and var != self.n:
             col = self.A[:, var]  # get a column
@@ -128,7 +128,7 @@ class SimplexSolver:
 
         assert len(self.base) == self.m, "Initial base not found"
 
-        if self.two_phase:
+        if self.two_phase: #switch the lines to correspond with the variables in base
             self.A = self.A[cols, :]
             self.b = self.b[cols, :]
 
@@ -153,6 +153,11 @@ class SimplexSolver:
         self.obj = self.optimize * np.dot(self.cb.T, self.var_base_value)[0, 0]
 
     def two_phase_find_init_base(self, list_column=[]):
+        """
+        Make the two phases to find an initial solution
+        :param list_column: list of the position of line that correspond with the variable in base
+        :return: value of two phase
+        """
         A = np.append(self.A, np.eye(self.m), axis=1)
         x = self.x[:] + ["R{}".format(i) for i in range(self.m - len(self.base))]
         c = [0] * self.n + [1] * self.m
