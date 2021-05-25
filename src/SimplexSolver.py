@@ -29,6 +29,7 @@ class SimplexSolver:
             assert len(x) == self.n, "Bad size for x parameter"
             self.x = x
 
+        self.equality = equality
         if equality is not None:
             for i in range(len(equality)):
                 s = equality[i]
@@ -57,6 +58,7 @@ class SimplexSolver:
         self.cn = None
         self.init_c = np.copy(self.c)
         self.b = np.array(b, dtype="float64")[np.newaxis].T
+        self.init_b = np.copy(self.b)
 
         self.base = None
         self.var_base_value = None
@@ -241,7 +243,10 @@ class SimplexSolver:
             for j in range(self.n):
                 if self.init_A[i, j] != 0:
                     addition.append("{} {}".format(Fraction(self.init_A[i, j]).limit_denominator(), self.x[j]))
-            constraint = "* " + " + ".join(addition) + " = {}\n".format(self.b[i, 0])
+            signe = "="
+            if self.equality is not None:
+                signe = self.equality[i]
+            constraint = "* " + " + ".join(addition) + " {} {}\n".format(signe, self.init_b[i, 0])
             constraint = constraint.replace("+ -", "- ")
             res += constraint
 
