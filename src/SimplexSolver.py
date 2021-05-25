@@ -6,7 +6,7 @@ from SimplexStep import SimplexStep
 
 
 class SimplexSolver:
-    def __init__(self, c, A, b, x=None, optimize=-1, two_phase=False):
+    def __init__(self, c, A, b, x=None, optimize=-1, two_phase=False, equality=None):
         """
         initialize solver to solve a linear problem like:
         max/min c^T x
@@ -18,12 +18,37 @@ class SimplexSolver:
         :param A: m x n matrix of numbers
         :param b: list of m numbers
         :param optimize: 1 if maximize, -1 if minimize
+        :param equality: list of constraints sign ("=","<=",">=") or None if only "="
         """
         self.A = np.array(A, dtype="float64")
+        self.m, self.n = self.A.shape
+
+        if x is None:
+            self.x = ["x{}".format(i) for i in range(1, self.n + 1)]
+        else:
+            assert len(x) == self.n, "Bad size for x parameter"
+            self.x = x
+
+        if equality is not None:
+            for i in range(len(equality)):
+                s = equality[i]
+                if s in ["<=", ">="]:
+                    tmp = np.zeros((self.m, self.n + 1))
+                    tmp[:, :-1] = self.A
+                    self.A = tmp  # add a column of 0
+                    self.n += 1
+
+                    c.append(0)
+
+                    if s == ">=":
+                        self.A[i, -1] = -1
+                    elif s == "<=":
+                        self.A[i, -1] = 1
+
+                    self.x.append("s{}".format(i + 1))
         self.Ab = None
         self.An = None
         self.init_A = np.copy(self.A)
-        self.m, self.n = self.A.shape
         assert self.n >= self.m, "You need more variables than constraints "
         assert optimize in [1, -1], "optimize must be 1 or -1"
         self.optimize = optimize
@@ -32,12 +57,6 @@ class SimplexSolver:
         self.cn = None
         self.init_c = np.copy(self.c)
         self.b = np.array(b, dtype="float64")[np.newaxis].T
-
-        if x is None:
-            self.x = ["x{}".format(i) for i in range(1, self.n + 1)]
-        else:
-            assert len(x) == self.n, "Bad size for x parameter"
-            self.x = x
 
         self.base = None
         self.var_base_value = None
@@ -104,7 +123,7 @@ class SimplexSolver:
         self.base = []
         self.var_base_value = []
         sol = []
-        cols = [] # keep the number column that correspond with the base variable
+        cols = []  # keep the number column that correspond with the base variable
 
         while len(self.base) != self.m and var != self.n:
             col = self.A[:, var]  # get a column
@@ -128,7 +147,7 @@ class SimplexSolver:
 
         assert len(self.base) == self.m, "Initial base not found"
 
-        if self.two_phase: #switch the lines to correspond with the variables in base
+        if self.two_phase:  # switch the lines to correspond with the variables in base
             self.A = self.A[cols, :]
             self.b = self.b[cols, :]
 
@@ -192,8 +211,8 @@ class SimplexSolver:
         if self.two_phase_simplex is not None:
             res += str(self.two_phase_simplex)
         if len(self.steps):
-            res += "#"*self.two_phase +"# Resolution\n" + self._resolution_str()
-        res += "#"*self.two_phase +"# Optimal Solution\n" + self._solution_str()
+            res += "#" * self.two_phase + "# Resolution\n" + self._resolution_str()
+        res += "#" * self.two_phase + "# Optimal Solution\n" + self._solution_str()
 
         return res
 
@@ -201,7 +220,7 @@ class SimplexSolver:
         res = ""
         for i in range(len(self.steps)):
             step = self.steps[i]
-            res += "#"*self.two_phase +"## Iteration {}\n".format(i + 1)
+            res += "#" * self.two_phase + "## Iteration {}\n".format(i + 1)
             res += str(step) + "\n"
 
         return res
@@ -252,7 +271,7 @@ if __name__ == "__main__":
     ]
     b = [24, 6, 2, 1]
 
-    simplex_solver = SimplexSolver(c, A, b, ["x1", "x2", "s1", "s2", "s3", "s4"])
+    #simplex_solver = SimplexSolver(c, A, b, ["x1", "x2", "s1", "s2", "s3", "s4"])
 
     c = [30, 40, 0, 0, 0]
     A = [
@@ -262,7 +281,20 @@ if __name__ == "__main__":
     ]
     b = [8, 11, 5]
     x = ["x_1", "x_2", "s_1", "s_2", "s_3"]
-    #simplex_solver = SimplexSolver(c, A, b, x, 1)
+
+    simplex_solver = SimplexSolver(c, A, b, x, 1)
+    simplex_solver.solve()
+
+    c = [30, 40]
+    A = [
+        [1, 2],
+        [2, 2],
+        [1, 0]
+    ]
+    b = [8, 11, 5]
+    x = ["x_1", "x_2"]
+
+    simplex_solver = SimplexSolver(c, A, b, x, 1, equality=[">=", ">=", "<="])
 
     # simplex_solver.find_init_base()
     # print(simplex_solver.base)
