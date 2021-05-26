@@ -69,7 +69,7 @@ class SimplexSolver:
         self.two_phase_simplex = None
 
     def solve(self):
-        solution_found = self.find_init_base()
+        solution_found = self.find_solution_admissible()
         if not solution_found:
             return None
 
@@ -77,9 +77,7 @@ class SimplexSolver:
         while not is_opti:
             var_in, var_out = self.find_in_out_variables()
 
-            self.steps.append(
-                SimplexStep(self.A, self.x, self.c, self.base, self.obj, self.var_base_value, var_in, var_out,
-                            self.optimize))
+            self.save_step(var_in, var_out)
 
             if var_in is None:
                 is_opti = True
@@ -103,6 +101,11 @@ class SimplexSolver:
                 self.c -= coef * self.A[line_index][np.newaxis].T
                 self.obj -= coef * self.var_base_value[line_index, 0]
 
+    def save_step(self, var_in, var_out):
+        self.steps.append(
+            SimplexStep(self.A, self.x, self.c, self.base, self.obj, self.var_base_value, var_in, var_out,
+                        self.optimize))
+
     def find_in_out_variables(self):
         """
         find which variable must leave the base and which one must enter
@@ -122,7 +125,7 @@ class SimplexSolver:
                 return in_variable, out_variable
         return None, None
 
-    def find_init_base(self):
+    def find_solution_admissible(self):
         var = 0
         self.base = []
         self.var_base_value = []
@@ -151,37 +154,39 @@ class SimplexSolver:
 
         if len(self.base) != self.m:  # "Initial base not found"
             return False
-        # cols.sort()
-        # self.base.sort()
+
         if self.two_phase:
             tmp = sorted(zip(cols, self.base))
-            cols = [c for c, b in tmp]
             self.base = [b for c, b in tmp]
-        # if self.two_phase:  # switch the lines to correspond with the variables in base
-        #    self.A = self.A[cols, :]
-        #    self.b = self.b[cols, :]
 
+        self.put_solution_in_base()
+
+        return True
+
+    def put_solution_in_base(self):
+        """
+        Adapt the problem with the new base
+        :return:
+        """
         var_not_base = list(set(range(self.n)) - set(self.base))
+
+        print(self.two_phase)
+        print(self.base)
+        print(self.A)
+
         self.Ab = self.A[:, self.base]
         self.An = self.A[:, var_not_base]
-
         self.cb = np.array(self.c[self.base, :], dtype="float64")
         self.cn = np.array(self.c[var_not_base, :], dtype="float64")
-
         tmp_c = self.cn.T - np.dot(np.dot(self.cb.T, np.linalg.inv(self.Ab)), self.An)
         self.c *= 0
-
         pos = 0
         for i in var_not_base:
             self.c[i, 0] = tmp_c[0, pos]
             pos += 1
-
         self.c *= -self.optimize
-
         self.var_base_value = np.dot(np.linalg.inv(self.Ab), self.b)
         self.obj = self.optimize * np.dot(self.cb.T, self.var_base_value)[0, 0]
-
-        return True
 
     def two_phase_find_init_base(self, list_column=[]):
         """
@@ -209,6 +214,18 @@ class SimplexSolver:
             self.b = two_phase_simplex.var_base_value
             self.base = two_phase_simplex.base
             self.var_base_value = two_phase_simplex.var_base_value
+
+            all_constraints = list(range(self.m))
+            i = 0
+            while i < len(self.base): # retire les ligne si des variables artificielles encore en base (si = 0)
+                if self.base[i] >= self.n:
+                    self.base.pop(i)
+                    self.A = np.delete(self.A, i, 0)
+                    self.b = np.delete(self.b, i, 0)
+                    self.m -= 1
+                else:
+                    i += 1
+
 
         self.two_phase_simplex = two_phase_simplex
 
