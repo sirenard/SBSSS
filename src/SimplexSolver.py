@@ -69,7 +69,9 @@ class SimplexSolver:
         self.two_phase_simplex = None
 
     def solve(self):
-        self.find_init_base()
+        solution_found = self.find_init_base()
+        if not solution_found:
+            return None
 
         is_opti = False
         while not is_opti:
@@ -147,11 +149,17 @@ class SimplexSolver:
         if len(self.base) != self.m and not self.two_phase:  # no initial solution found
             self.two_phase_find_init_base(cols)
 
-        assert len(self.base) == self.m, "Initial base not found"
-
-        if self.two_phase:  # switch the lines to correspond with the variables in base
-            self.A = self.A[cols, :]
-            self.b = self.b[cols, :]
+        if len(self.base) != self.m:  # "Initial base not found"
+            return False
+        # cols.sort()
+        # self.base.sort()
+        if self.two_phase:
+            tmp = sorted(zip(cols, self.base))
+            cols = [c for c, b in tmp]
+            self.base = [b for c, b in tmp]
+        # if self.two_phase:  # switch the lines to correspond with the variables in base
+        #    self.A = self.A[cols, :]
+        #    self.b = self.b[cols, :]
 
         var_not_base = list(set(range(self.n)) - set(self.base))
         self.Ab = self.A[:, self.base]
@@ -172,6 +180,8 @@ class SimplexSolver:
 
         self.var_base_value = np.dot(np.linalg.inv(self.Ab), self.b)
         self.obj = self.optimize * np.dot(self.cb.T, self.var_base_value)[0, 0]
+
+        return True
 
     def two_phase_find_init_base(self, list_column=[]):
         """
@@ -194,7 +204,7 @@ class SimplexSolver:
 
         two_phase_simplex = SimplexSolver(c, A, b, x, 1, True)
         two_phase_simplex.solve()
-        if two_phase_simplex.obj == 0:
+        if round(two_phase_simplex.obj, 10) == 0:
             self.A = two_phase_simplex.A[:, :self.n]
             self.b = two_phase_simplex.var_base_value
             self.base = two_phase_simplex.base
@@ -253,16 +263,20 @@ class SimplexSolver:
         return res
 
     def _solution_str(self):
-        current_sol = []
-        for i in range(self.n):
-            if i in self.base:
-                val = Fraction(self.var_base_value[self.base.index(i)][0]).limit_denominator()
-                current_sol.append(val)
-            else:
-                current_sol.append(0)
+        if len(self.steps):
+            current_sol = []
+            for i in range(self.n):
+                if i in self.base:
+                    val = Fraction(self.var_base_value[self.base.index(i)][0]).limit_denominator()
+                    current_sol.append(val)
+                else:
+                    current_sol.append(0)
 
-        res = "\n* ({}) = ({})\n".format(", ".join(map(str, self.x)), ", ".join(map(str, current_sol)))
-        res += "* obj = {}\n".format(self.optimize * self.obj)
+            res = "\n* ({}) = ({})\n".format(", ".join(map(str, self.x)), ", ".join(map(str, current_sol)))
+            sol = self.optimize * self.obj
+            res += "* obj = {} = {}\n".format(Fraction(sol).limit_denominator(), sol)
+        else:
+            res = "no admissible solution found\n"
         return res
 
 
@@ -276,7 +290,7 @@ if __name__ == "__main__":
     ]
     b = [24, 6, 2, 1]
 
-    #simplex_solver = SimplexSolver(c, A, b, ["x1", "x2", "s1", "s2", "s3", "s4"])
+    # simplex_solver = SimplexSolver(c, A, b, ["x1", "x2", "s1", "s2", "s3", "s4"])
 
     c = [30, 40, 0, 0, 0]
     A = [
@@ -287,8 +301,8 @@ if __name__ == "__main__":
     b = [8, 11, 5]
     x = ["x_1", "x_2", "s_1", "s_2", "s_3"]
 
-    simplex_solver = SimplexSolver(c, A, b, x, 1)
-    simplex_solver.solve()
+    # simplex_solver = SimplexSolver(c, A, b, x, 1)
+    # simplex_solver.solve()
 
     c = [30, 40]
     A = [
@@ -299,11 +313,21 @@ if __name__ == "__main__":
     b = [8, 11, 5]
     x = ["x_1", "x_2"]
 
-    simplex_solver = SimplexSolver(c, A, b, x, 1, equality=[">=", ">=", "<="])
+    # simplex_solver = SimplexSolver(c, A, b, x, 1, equality=[">=", ">=", "<="])
 
     # simplex_solver.find_init_base()
     # print(simplex_solver.base)
     # print(simplex_solver.obj)
+
+    c = [4, 1]
+
+    A = [
+        [3, 1],
+        [4, 3],
+        [1, 2]
+    ]
+
+    simplex_solver = SimplexSolver(c, A, b, x, 1, equality=["=", ">=", "<="])
 
     simplex_solver.solve()
     print(simplex_solver)
