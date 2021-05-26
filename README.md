@@ -23,6 +23,7 @@ b = [8, 11, 5]
 x = ["x_1", "x_2"]
 
 simplex_solver = SimplexSolver(c, A, b, x, optimize=1, equality=[">=", ">=", "<="])
+simplex_solver.solve()
 print(simplex_solver)
 ```
 * optimize: 1 si min, -1 si max (par défaut -1)
