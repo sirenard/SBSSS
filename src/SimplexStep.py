@@ -16,7 +16,7 @@ class SimplexStep:
         self.optimize = optimize
 
     def __str__(self):
-        labels = ["Hbase", "z"] + list(self.x.T) + ["Solution"]
+        labels = ["base", "z"] + list(self.x.T) + ["Solution"]
         head = " | ".join([":--:"] * (3 + len(list(self.x.T))))
         z = ["z", self.optimize] + list(self.c.T[0]) + [self.obj]
 
