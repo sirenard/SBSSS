@@ -24,7 +24,7 @@ x = ["x_1", "x_2"]
 
 simplex_solver = SimplexSolver(c, A, b, x, optimize=1, equality=[">=", ">=", "<="])
 simplex_solver.solve()
-print(simplex_solver)
+print(simplex_solver) #texte au format markdown
 ```
 * optimize: 1 si min, -1 si max (par défaut -1)
 * equality: liste des signe des contraintes (>=, <=, =). Par défaut "=" pour toutes les contraintes
