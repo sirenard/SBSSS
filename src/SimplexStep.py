@@ -20,8 +20,6 @@ class SimplexStep:
         head = " | ".join([":--:"] * (3 + len(list(self.x.T))))
         z = ["z", self.optimize] + list(self.c.T[0]) + [self.obj]
 
-        print(" Je print le print")
-
         z = list(map(create_fraction, z))
         matrix = [list(map(create_fraction, [self.x[self.base[i]], 0] + list(self.A[i]) + [self.sol[i, 0]])) for i in
                   range(self.A.shape[0])]
