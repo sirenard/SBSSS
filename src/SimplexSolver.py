@@ -170,12 +170,9 @@ class SimplexSolver:
         """
         var_not_base = list(set(range(self.n)) - set(self.base))
 
-        print(self.two_phase)
-        print(self.base)
-        print(self.A)
-
         self.Ab = self.A[:, self.base]
         self.An = self.A[:, var_not_base]
+        self.A = np.dot(np.linalg.inv(self.Ab), self.A)
         self.cb = np.array(self.c[self.base, :], dtype="float64")
         self.cn = np.array(self.c[var_not_base, :], dtype="float64")
         tmp_c = self.cn.T - np.dot(np.dot(self.cb.T, np.linalg.inv(self.Ab)), self.An)
@@ -215,17 +212,16 @@ class SimplexSolver:
             self.base = two_phase_simplex.base
             self.var_base_value = two_phase_simplex.var_base_value
 
-            all_constraints = list(range(self.m))
             i = 0
-            while i < len(self.base): # retire les ligne si des variables artificielles encore en base (si = 0)
+            while i < len(self.base):  # retire les ligne si des variables artificielles encore en base (si = 0)
                 if self.base[i] >= self.n:
                     self.base.pop(i)
                     self.A = np.delete(self.A, i, 0)
                     self.b = np.delete(self.b, i, 0)
+                    self.var_base_value = np.delete(self.var_base_value, i, 0)
                     self.m -= 1
                 else:
                     i += 1
-
 
         self.two_phase_simplex = two_phase_simplex
 

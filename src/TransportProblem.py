@@ -33,7 +33,10 @@ class TransportProblem(SimplexSolver):
 
         super(TransportProblem, self).__init__(c, A, b, optimize=1)
 
-    def find_solution_admissiblesss(self):
+    def find_solution_admissible(self):
+        self.base = []
+        self.var_base_value = []
+        self.two_phase_find_init_base()
         self.base = []
         self.var_base_value = []
 
@@ -55,7 +58,6 @@ class TransportProblem(SimplexSolver):
                 j += 1
             else:
                 i += 1
-
 
         self.put_solution_in_base()
         return True
@@ -85,5 +87,7 @@ if __name__ == "__main__":
         [4, 14, 16, 18]
     ]
     transport = TransportProblem(costs, request, offer)
+
     transport.solve()
-    print(transport._solution_str())
+    transport.two_phase_simplex = None
+    print(transport)
