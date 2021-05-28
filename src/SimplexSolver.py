@@ -60,7 +60,7 @@ class SimplexSolver:
         self.b = np.array(b, dtype="float64")[np.newaxis].T
         self.init_b = np.copy(self.b)
 
-        self.base = None
+        self.base = []
         self.var_base_value = None
         self.obj = 0
         self.steps = []  # save of every steps
@@ -128,8 +128,7 @@ class SimplexSolver:
     def find_solution_admissible(self):
         var = 0
         self.base = []
-        self.var_base_value = []
-        sol = []
+        new_base = []
         lines = []  # keep the line number that correspond with the base variable
 
         while len(self.base) != self.m and var != self.n:
@@ -140,37 +139,33 @@ class SimplexSolver:
                 constraint_index, var] > 0:  # if only 1 no zero in column -> var can be in base
 
                 lines.append(constraint_index)
-                self.base.append(var)
-                self.var_base_value.append(self.b[constraint_index, 0] / self.A[constraint_index, var])
+                new_base.append(var)
 
-                sol.append(self.var_base_value[-1])
-                #self.A[constraint_index] /= self.A[constraint_index, var]
-            else:  # variable not in base
-                sol.append(0)
             var += 1
 
 
-        if len(self.base) != self.m and not self.two_phase:  # no initial solution found
-            self.two_phase_find_init_base(lines)
+        if len(new_base) != self.m and not self.two_phase:  # no initial solution found
+            self.two_phase_find_init_base(new_base, lines)
+            new_base = self.base
 
-        if len(self.base) != self.m:  # "Initial base not found"
+        if len(new_base) != self.m:  # "Initial base not found"
             return False
 
         if self.two_phase:
             tmp = sorted(zip(lines, self.base))
             self.base = [b for c, b in tmp]
 
-        self.put_solution_in_base()
+        self.set_base(new_base)
 
         return True
 
-    def put_solution_in_base(self):
+    def set_base(self, new_base):
         """
         Adapt the problem with the new base
+        :param new_base: list of var to set in base
         :return:
         """
-        print(self.base)
-        print(self.A)
+        self.base = new_base
         var_not_base = list(set(range(self.n)) - set(self.base))
 
         self.Ab = self.A[:, self.base]
@@ -188,14 +183,14 @@ class SimplexSolver:
         self.var_base_value = np.dot(np.linalg.inv(self.Ab), self.b)
         self.obj = self.optimize * np.dot(self.cb.T, self.var_base_value)[0, 0]
 
-    def two_phase_find_init_base(self, list_lines=[]):
+    def two_phase_find_init_base(self, new_base=[], list_lines=[]):
         """
         Make the two phases to find an initial solution
         :param list_lines: list of the position of line that correspond with the variable in base
         :return: value of two phase
         """
         A = np.append(self.A, np.eye(self.m), axis=1)
-        x = self.x[:] + ["R{}".format(i+1) for i in range(self.m - len(self.base))]
+        x = self.x[:] + ["R{}".format(i+1) for i in range(self.m - len(new_base))]
         c = [0] * self.n + [1] * self.m
 
         count = 0
@@ -209,6 +204,7 @@ class SimplexSolver:
 
         two_phase_simplex = SimplexSolver(c, A, b, x, 1, True)
         two_phase_simplex.solve()
+        print(two_phase_simplex.obj)
         if round(two_phase_simplex.obj, 10) == 0:
             self.A = two_phase_simplex.A[:, :self.n]
             self.b = two_phase_simplex.var_base_value

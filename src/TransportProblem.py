@@ -34,22 +34,22 @@ class TransportProblem(SimplexSolver):
         super(TransportProblem, self).__init__(c, A, b, optimize=1)
 
     def find_solution_admissible(self):
-        self.base = []
-        self.var_base_value = []
         self.two_phase_find_init_base()
-        self.base = []
         self.var_base_value = []
+        var_base_value = []
+
+        new_base = []
 
         i, j = 0, 0
         current_offer = self.offer[:]
         current_request = self.request[:]
-        while sum(self.var_base_value) != sum(self.offer):
+        while sum(var_base_value) != sum(self.offer):
             var_index = i * self.n_request + j
-            self.base.append(var_index)
+            new_base.append(var_index)
             request_possible = current_request[j]
             offer_possible = current_offer[i]
             value = min(request_possible, offer_possible)
-            self.var_base_value.append(value)
+            var_base_value.append(value)
 
             current_request[j] -= value
             current_offer[i] -= value
@@ -59,7 +59,7 @@ class TransportProblem(SimplexSolver):
             else:
                 i += 1
 
-        self.put_solution_in_base()
+        self.set_base(new_base)
         return True
 
     def save_step(self, var_in, var_out):
