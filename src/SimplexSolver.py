@@ -204,7 +204,6 @@ class SimplexSolver:
 
         two_phase_simplex = SimplexSolver(c, A, b, x, 1, True)
         two_phase_simplex.solve()
-        print(two_phase_simplex.obj)
         if round(two_phase_simplex.obj, 10) == 0:
             self.A = two_phase_simplex.A[:, :self.n]
             self.b = two_phase_simplex.var_base_value

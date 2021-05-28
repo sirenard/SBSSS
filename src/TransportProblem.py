@@ -1,4 +1,5 @@
 from SimplexSolver import *
+from TransportProblemStep import TransportProblemStep
 
 
 class TransportProblem(SimplexSolver):
@@ -12,6 +13,7 @@ class TransportProblem(SimplexSolver):
 
         self.n_offer = len(offer)
         self.n_request = len(request)
+        self.costs = costs
 
         costs = np.array(costs)
         assert self.n_offer == costs.shape[0] and self.n_request == costs.shape[1], "Bad size"
@@ -63,7 +65,16 @@ class TransportProblem(SimplexSolver):
         return True
 
     def save_step(self, var_in, var_out):
-        super().save_step(var_in, var_out)
+        v = []
+        for i in range(self.n_request):
+            v.append(self.costs[0][i] + self.c[i, 0])
+        u = [0]
+        for i in range(1, self.n_offer):
+            u.append(self.costs[i][0] - v[0] + self.c[i * self.n_request, 0])
+        self.steps.append(
+            TransportProblemStep(self.costs, self.c, self.n_offer, self.n_request, self.base, self.var_base_value,
+                                 var_in,
+                                 var_out, u, v))
 
 
 if __name__ == "__main__":
@@ -75,8 +86,7 @@ if __name__ == "__main__":
         [100, 108],
         [102, 68]
     ]
-    #transport = TransportProblem(costs, request, offer)
-
+    # transport = TransportProblem(costs, request, offer)
 
     # exemple 2
     offer = [15, 25, 10]
