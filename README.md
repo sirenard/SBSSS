@@ -3,6 +3,8 @@ Step By Step Simplex Solver is an insane simplex solver that generates and shows
 
 ## Utilisation (flemme de faire en anglais)
 
+### Simplexe
+
 Pour un problème:
 
 min  30 x_1 + 40 x_2  
@@ -12,7 +14,8 @@ s.t.
 * 2 x_1 + 2 x_2 - 1 s2 >= 11.0
 * 1 x_1 + 1 s3 <= 5.0
 
-```
+```python
+from src.SimplexSolver import *
 c = [30, 40]
 A = [
   [1, 2],
@@ -30,7 +33,34 @@ print(simplex_solver) #texte au format markdown
 * equality: liste des signe des contraintes (>=, <=, =). Par défaut "=" pour toutes les contraintes
 * x: nom des variables. Par défaut x1, x2, ...
 
-## Fonctionnalités
+#### Fonctionnalités
 
 * Ajoute des variables de slacks (de manière bête, une par contrainte) pour le moment
 * Exécute le 2 phases si nécéssaire
+
+### Problème de transport
+
+| | 1 | 2 | 3| Offre |
+|:--: | :--: | :--: | :--: | :--: |
+| 1  |10 | 2 | 20 | 11 | 15 |
+| 2  |12 | 7 | 9  | 20 | 25 |
+| 3  |4  |14 | 16 | 18 | 10 |
+| Demande  | 5 | 15 | 15 | 15 | |
+
+```python
+from src.TransportProblem import *
+
+offer = [15, 25, 10]
+request = [5, 15, 15, 15]
+costs = [
+    [10, 2, 20, 11],
+    [12, 7, 9, 20],
+    [4, 14, 16, 18]
+]
+transport = TransportProblem(costs, request, offer)
+transport.solve()
+print(transport) # format markdown
+```
+
+#### Note
+* Pour le moment uniquement la méthode NO

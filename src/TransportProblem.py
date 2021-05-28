@@ -75,6 +75,10 @@ class TransportProblem(SimplexSolver):
             TransportProblemStep(self.costs, self.c, self.n_offer, self.n_request, self.base, self.var_base_value,
                                  var_in,
                                  var_out, u, v))
+        
+    def __str__(self):
+        self.two_phase_simplex = None #pour ne pas print les infos du 2 phases
+        return super(TransportProblem, self).__str__()
 
 
 if __name__ == "__main__":
@@ -99,5 +103,4 @@ if __name__ == "__main__":
     transport = TransportProblem(costs, request, offer)
 
     transport.solve()
-    transport.two_phase_simplex = None
     print(transport)
