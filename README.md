@@ -63,4 +63,7 @@ print(transport) # format markdown
 ```
 
 #### Note
-* Pour le moment uniquement la méthode NO
+* On peut modifier la méthode pour choisir la base initiale en modifiant le paramètre init_base_method à la construction:
+  * "NO" pour nord ouest (fonctionne bien) (par défaut)
+  * "MC" pour les moindre coûts (peu tester, n'a pas l'air de fonctionner si une var en base est nulle)
+  * liste d'indice de variable pour définir la base manuellement
