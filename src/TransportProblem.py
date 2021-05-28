@@ -3,17 +3,20 @@ from TransportProblemStep import TransportProblemStep
 
 
 class TransportProblem(SimplexSolver):
-    def __init__(self, costs, request, offer):
+    def __init__(self, costs, request, offer, init_base_method="NO"):
         """
         Solve Transport Problem
         :param costs: matrix of costs
         :param request: list of requests for each center
+        :param init_base_method: pour choisir la méthode pour la solution initiale: soit "NO" pourd nord ouest,
+            "MC" pour moindre coût, ou directewment une solution avec un format [var en base 1, var en base 2, ...]
         :param offer: list of offer for each center
         """
 
         self.n_offer = len(offer)
         self.n_request = len(request)
         self.costs = costs
+        self.init_base_method = init_base_method
 
         costs = np.array(costs)
         assert self.n_offer == costs.shape[0] and self.n_request == costs.shape[1], "Bad size"
@@ -38,29 +41,53 @@ class TransportProblem(SimplexSolver):
     def find_solution_admissible(self):
         self.two_phase_find_init_base()
         self.var_base_value = []
+        temp_costs = np.array(self.costs, dtype="float64")
         var_base_value = []
 
         new_base = []
 
-        i, j = 0, 0
-        current_offer = self.offer[:]
-        current_request = self.request[:]
-        while sum(var_base_value) != sum(self.offer):
-            var_index = i * self.n_request + j
-            new_base.append(var_index)
-            request_possible = current_request[j]
-            offer_possible = current_offer[i]
-            value = min(request_possible, offer_possible)
-            var_base_value.append(value)
+        if self.init_base_method in ["NO", "MC"]:
+            i, j = 0, 0
+            current_offer = self.offer[:]
+            current_request = self.request[:]
+            while sum(var_base_value) != sum(self.offer):
+                if self.init_base_method == "MC":
+                    i, j = np.unravel_index(temp_costs.argmin(), temp_costs.shape)
+                    temp_costs[i, j] = np.Inf
 
-            current_request[j] -= value
-            current_offer[i] -= value
+                var_index = i * self.n_request + j
+                request_possible = current_request[j]
+                offer_possible = current_offer[i]
+                value = min(request_possible, offer_possible)
 
-            if current_request[j] == 0:
-                j += 1
-            else:
-                i += 1
 
+                new_base.append(var_index)
+                var_base_value.append(value)
+
+                current_request[j] -= value
+                current_offer[i] -= value
+
+                if self.init_base_method == "NO":
+                    if current_request[j] == 0:
+                        j += 1
+                    else:
+                        i += 1
+                else:
+                    if current_request[j] == 0:
+                        temp_costs[:,j] += np.Inf
+                    if current_offer[i] == 0:
+                        temp_costs[i,:] += np.Inf
+        else:
+            new_base = self.init_base_method
+
+        if self.init_base_method == "MC":
+            var = 0
+            while len(new_base) != self.n_offer + self.n_request - 1 and var != self.n_offer * self.n_request:
+                if var not in new_base:
+                    new_base.append(var)
+                var += 1
+
+        print(new_base)
         self.set_base(new_base)
         return True
 
@@ -75,9 +102,9 @@ class TransportProblem(SimplexSolver):
             TransportProblemStep(self.costs, self.c, self.n_offer, self.n_request, self.base, self.var_base_value,
                                  var_in,
                                  var_out, u, v))
-        
+
     def __str__(self):
-        self.two_phase_simplex = None #pour ne pas print les infos du 2 phases
+        self.two_phase_simplex = None  # pour ne pas print les infos du 2 phases
         return super(TransportProblem, self).__str__()
 
 
@@ -100,7 +127,8 @@ if __name__ == "__main__":
         [12, 7, 9, 20],
         [4, 14, 16, 18]
     ]
-    transport = TransportProblem(costs, request, offer)
+    # transport = TransportProblem(costs, request, offer, init_base_method=[1,5,6,7,8,11])
+    transport = TransportProblem(costs, request, offer, init_base_method=[1,6,7,8,10,11])
 
     transport.solve()
     print(transport)
