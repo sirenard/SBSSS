@@ -87,7 +87,6 @@ class TransportProblem(SimplexSolver):
                     new_base.append(var)
                 var += 1
 
-        print(new_base)
         self.set_base(new_base)
         return True
 
