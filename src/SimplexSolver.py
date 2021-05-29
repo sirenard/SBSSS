@@ -29,6 +29,8 @@ class SimplexSolver:
             assert len(x) == self.n, "Bad size for x parameter"
             self.x = x
 
+        self.init_x = np.copy(self.x)
+
         self.equality = equality
         if equality is not None:
             for i in range(len(equality)):
@@ -143,7 +145,6 @@ class SimplexSolver:
 
             var += 1
 
-
         if len(new_base) != self.m and not self.two_phase:  # no initial solution found
             self.two_phase_find_init_base(new_base, lines)
             new_base = self.base
@@ -190,7 +191,7 @@ class SimplexSolver:
         :return: value of two phase
         """
         A = np.append(self.A, np.eye(self.m), axis=1)
-        x = self.x[:] + ["R{}".format(i+1) for i in range(self.m - len(new_base))]
+        x = self.x[:] + ["R{}".format(i + 1) for i in range(self.m - len(new_base))]
         c = [0] * self.n + [1] * self.m
 
         count = 0
@@ -227,7 +228,9 @@ class SimplexSolver:
 
     def __str__(self):
         if not self.two_phase:
-            res = "# Formulation\n" + self._formulation_str()
+            res = "# Formulation\n" + self._formulation_str(condensed=True)
+            if len(self.init_x) != self.n:
+                res += "## Ajout des variables de slacks\n" + self._formulation_str(condensed=False)
         else:
             res = "## Formulation 2 phase\n" + self._formulation_str()
 
@@ -248,7 +251,7 @@ class SimplexSolver:
 
         return res
 
-    def _formulation_str(self):
+    def _formulation_str(self, condensed=False):
         res = ""
         res += "max  " if self.optimize == -1 else "min  "
         addition = []
@@ -261,15 +264,22 @@ class SimplexSolver:
 
         for i in range(self.m):
             addition = []
-            for j in range(self.n):
+            n = self.n
+            x = self.x
+            if condensed:
+                n = len(self.init_x)
+                x = self.init_x
+            for j in range(n):
                 if self.init_A[i, j] != 0:
-                    addition.append("{} {}".format(Fraction(self.init_A[i, j]).limit_denominator(), self.x[j]))
+                    addition.append("{} {}".format(Fraction(self.init_A[i, j]).limit_denominator(), x[j]))
             signe = "="
-            #if self.equality is not None:
-            #    signe = self.equality[i]
+            if condensed and self.equality is not None:
+                signe = self.equality[i]
             constraint = "* " + " + ".join(addition) + " {} {}\n".format(signe, self.init_b[i, 0])
             constraint = constraint.replace("+ -", "- ")
             res += constraint
+
+        res += "* " + ", ".join(x) + " >= 0\n"
 
         return res
 
