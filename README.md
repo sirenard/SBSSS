@@ -43,6 +43,7 @@ print(simplex_solver)  # texte au format markdown
 
 * Ajoute des variables de slacks (de manière bête, une par contrainte) pour le moment
 * Exécute le 2 phases si nécéssaire
+* Affiche la solution du dual assossié
 
 ### Problème de transport
 
