@@ -112,7 +112,7 @@ class SimplexSolver:
         :return: (in variable index, out variable index) or None if none variable can go in base
         """
         in_variable = np.argmax(self.c)
-        if self.c[in_variable] > 0:
+        if self.c[in_variable] >= 0:
             out_variable = -1
             current = float('inf')
             for m in range(self.m):
