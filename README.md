@@ -101,5 +101,6 @@ print(maxFlot)
 ### Note
 
 * Il est possible de donner une solution initiale en ajoutant une valeur aux tuples des arrêtes concernée. Par
-  exemple: `("s", "B", 2, 1)` pour une arrête avec une capacité de 2 et un flot initial de 2.
+  exemple: `("s", "B", 2, 1)` pour une arrête avec une capacité de 2 et un flot initial de 1.
     * Le solver ne vérifie pas que la solution initiale est valide
+* Le premier sommet de la liste `vertex_name` est d'office la source et le dernier la destination
