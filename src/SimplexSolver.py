@@ -2,7 +2,7 @@ from fractions import Fraction
 
 import numpy as np
 
-from SimplexStep import SimplexStep
+from SimplexStep import *
 
 
 class SimplexSolver:
@@ -226,6 +226,25 @@ class SimplexSolver:
 
         return two_phase_simplex.obj
 
+    def get_dual_solution(self):
+        """
+        calcul la solution du dual
+        :return: [y1,y2,y3,...]
+        """
+        n_variable = self.m
+        a = np.zeros((n_variable, n_variable))
+        b = np.zeros((n_variable, 1))
+
+        count = 0
+        for v in self.base:
+            a[count] = self.init_A[:, v].T
+            b[count] = self.init_c[v,0]
+            count += 1
+
+        return np.dot(np.linalg.inv(a),b)
+
+
+
     def __str__(self):
         if not self.two_phase:
             res = "# Formulation\n" + self._formulation_str(condensed=True)
@@ -275,9 +294,12 @@ class SimplexSolver:
             signe = "="
             if condensed and self.equality is not None:
                 signe = self.equality[i]
-            constraint = "* " + " + ".join(addition) + " {} {}\n".format(signe, self.init_b[i, 0])
+            constraint = "* " + " + ".join(addition) + " {} {}".format(signe, self.init_b[i, 0])
             constraint = constraint.replace("+ -", "- ")
-            res += constraint
+
+            if condensed:
+                constraint += "&nbsp;"*5+"(y{})".format(i)
+            res += constraint + "\n"
 
         res += "* " + ", ".join(x) + " >= 0\n"
 
@@ -296,6 +318,7 @@ class SimplexSolver:
             res = "\n* ({}) = ({})\n".format(", ".join(map(str, self.x)), ", ".join(map(str, current_sol)))
             sol = self.optimize * self.obj
             res += "* obj = {} = {}\n".format(Fraction(sol).limit_denominator(), sol)
+            res += "* Solution dual: ({}) = ({})\n".format(", ".join(["y{}".format(i) for i in range(self.m)]) ,", ".join(list(map(create_fraction,self.get_dual_solution()[:,0]))))
         else:
             res = "no admissible solution found\n"
         return res
