@@ -127,7 +127,7 @@ if __name__ == "__main__":
         [4, 14, 16, 18]
     ]
     # transport = TransportProblem(costs, request, offer, init_base_method=[1,5,6,7,8,11])
-    transport = TransportProblem(costs, request, offer, init_base_method=[1,6,7,8,10,11])
+    transport = TransportProblem(costs, request, offer, init_base_method=[1,6,7,8,9,11])
 
     transport.solve()
     print(transport)

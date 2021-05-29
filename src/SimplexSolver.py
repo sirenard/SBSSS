@@ -265,8 +265,8 @@ class SimplexSolver:
                 if self.init_A[i, j] != 0:
                     addition.append("{} {}".format(Fraction(self.init_A[i, j]).limit_denominator(), self.x[j]))
             signe = "="
-            if self.equality is not None:
-                signe = self.equality[i]
+            #if self.equality is not None:
+            #    signe = self.equality[i]
             constraint = "* " + " + ".join(addition) + " {} {}\n".format(signe, self.init_b[i, 0])
             constraint = constraint.replace("+ -", "- ")
             res += constraint
