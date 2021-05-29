@@ -46,8 +46,12 @@ print(simplex_solver)  # texte au format markdown
 
 ### Problème de transport
 
-| | 1 | 2 | 3| Offre | |:--: | :--: | :--: | :--: | :--: | | 1 |10 | 2 | 20 | 11 | 15 | | 2 |12 | 7 | 9 | 20 | 25 | | 3
-|4 |14 | 16 | 18 | 10 | | Demande | 5 | 15 | 15 | 15 | |
+| | 1 | 2 | 3| Offre |
+|:--: | :--: | :--: | :--: | :--: |
+| 1 |10 | 2 | 20 | 11 | 15 |
+| 2 |12 | 7 | 9 | 20 | 25 | | 3
+|4 |14 | 16 | 18 | 10 |
+| Demande | 5 | 15 | 15 | 15 | |
 
 ```python
 from src.TransportProblem import *
