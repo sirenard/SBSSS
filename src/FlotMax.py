@@ -1,7 +1,7 @@
-from SimplexSolver import *
+from FlotMaxStep import *
 
 
-class FlotMax(SimplexSolver):
+class FlotMax:
     def __init__(self, vertex_name, edges):
         """
         Solve a Flot Max problem
@@ -14,38 +14,82 @@ class FlotMax(SimplexSolver):
 
         # n_edges + 1 variables, first one is v
         n_var = n_edges + 1
-        c = [0 for i in range(n_var)]
+        c = [0 for _ in range(n_var)]
         c[0] = 1
 
-        A = []
-        b = []
-        equality = []
-        for i in range(n_vertex):
-            flux_conservation_constraint = [0 for _ in range(n_var)]
-            name = vertex_name[i]
-            for j, edge in enumerate(edges):
-                if name == edge[0]:  # vertex is a source of this edge
-                    flux_conservation_constraint[j + 1] = 1
-                elif name == edge[1]:  # vertex is a destination of this edge
-                    flux_conservation_constraint[j + 1] = -1
+        self.capacity = np.zeros((n_vertex, n_vertex))
+        self.solution = np.zeros((n_vertex, n_vertex))
+        self.obj = 0
+        self.mark = []
+        self.n_vertex = n_vertex
+        self.vertex_name = vertex_name
+        self.edges = edges
+        self.steps = []
 
-            if i == 0:  # source
-                flux_conservation_constraint[0] = -1
-            elif i == n_vertex - 1:  # destination
-                flux_conservation_constraint[0] = 1
+        for edge in edges:
+            i = vertex_name.index(edge[0])
+            j = vertex_name.index(edge[1])
+            self.capacity[i, j] = edge[2]
 
-            A.append(flux_conservation_constraint)
-            b.append(0)
-            equality.append("=")
+    def solve(self):
+        while self.mark_vertex():
+            current = self.vertex_name[-1]
+            val = self.mark[current][1]
+            increasing_path = []
+            while current is not None:
+                increasing_path = [current] + increasing_path
+                self.increase_solution(current, val)
+                current = self.mark[current][0]
 
-        for i in range(n_edges):
-            flux_limit = [0 for _ in range(n_var)]
-            flux_limit[i + 1] = 1
-            A.append(flux_limit)
-            b.append(edges[i][2])
-            equality.append("<=")
+            self.save_step(increasing_path, val)
+        self.save_step([], 0)
 
-        super(FlotMax, self).__init__(c, A, b, optimize=-1, equality=equality)
+    def increase_solution(self, name, value):
+        m = self.mark[name]
+
+        if m[0] is None:
+            return
+        i = self.vertex_name.index(m[0])
+        j = self.vertex_name.index(name)
+
+        if m[2]:
+            self.solution[i, j] += value
+        else:
+            self.solution[i, j] += value
+
+    def mark_vertex(self):
+        self.mark = {}
+        L = []
+        self.mark[self.vertex_name[0]] = (None, np.Inf, 1)
+        L.append(0)
+        while len(L) and self.vertex_name[-1] not in self.mark:
+            vertex = L.pop()
+            current_val = self.mark[self.vertex_name[vertex]][1]
+            for j in range(self.n_vertex):
+                if self.vertex_name[j] not in self.mark:
+                    if self.solution[vertex, j] < self.capacity[vertex, j]:
+                        val = min(current_val, self.capacity[vertex, j] - self.solution[vertex, j])
+                        self.mark[self.vertex_name[j]] = (self.vertex_name[vertex], val, 1)
+                        L.append(j)
+                    elif self.capacity[j, vertex] and self.solution[j, vertex] > 0:
+                        val = min(current_val, self.solution[vertex, j])
+                        self.mark[self.vertex_name[j]] = (self.vertex_name[vertex], val, 0)
+                        L.append(j)
+
+        return self.vertex_name[-1] in self.mark
+
+    def save_step(self, increasing_path, augmentation):
+        obj = sum(self.solution[:, 0])
+        self.steps.append(
+            FlotMaxStep(self.capacity, self.solution, increasing_path, augmentation, obj, self.vertex_name, self.edges))
+
+    def __str__(self):
+        res = ""
+        for i, step in enumerate(self.steps):
+            res += "# Iteration {}\n\n".format(i + 1)
+            res += str(step)
+
+        return res
 
 
 if __name__ == "__main__":
@@ -59,5 +103,7 @@ if __name__ == "__main__":
     ]
 
     maxFlot = FlotMax(vertex_name, edges)
+
     maxFlot.solve()
-    print(maxFlot.obj)
+    # print(maxFlot.solution)
+    print(maxFlot)
