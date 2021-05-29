@@ -8,7 +8,7 @@ class TransportProblemStep:
         self.n_offer = n_offer
         self.n_request = n_request
         self.var_base = var_base[:]
-        self.var_base_value = var_base_value[:]
+        self.var_base_value = np.copy(var_base_value)
         self.in_variable = in_variable
         self.out_variable = out_variable
         self.u = u

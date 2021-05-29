@@ -106,6 +106,16 @@ class TransportProblem(SimplexSolver):
         self.two_phase_simplex = None  # pour ne pas print les infos du 2 phases
         return super(TransportProblem, self).__str__()
 
+    def _formulation_str(self, condensed=False):
+        res = "|  | " + "|".join([str(i) for i in range(self.n_request)]) + " | Offer |\n"
+        res += "|:--:"*(self.n_request+2)+"|\n"
+        for i in range(self.n_offer):
+            res += "| {} |".format(i) + "| ".join(list(map(str,self.costs[i]))) + "| {} |\n".format(self.offer[i])
+
+        res += "| request |" + " | ".join(list(map(str, self.request))) + "| |\n\n"
+
+        return res
+
 
 if __name__ == "__main__":
     # exemple 1
@@ -126,8 +136,15 @@ if __name__ == "__main__":
         [12, 7, 9, 20],
         [4, 14, 16, 18]
     ]
+
+    offer = [350, 550]
+    request = [300, 300, 300]
+    costs = [
+        [25, 17, 16],
+        [24, 18, 14]
+    ]
     # transport = TransportProblem(costs, request, offer, init_base_method=[1,5,6,7,8,11])
-    transport = TransportProblem(costs, request, offer, init_base_method=[1,6,7,8,9,11])
+    transport = TransportProblem(costs, request, offer, init_base_method="NO")
 
     transport.solve()
     print(transport)
