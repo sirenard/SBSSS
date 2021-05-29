@@ -5,7 +5,7 @@ class FlotMax:
     def __init__(self, vertex_name, edges):
         """
         Solve a Flot Max problem
-        :param edges: list of tuple (vertex source, vertex destination, capacity of the edge)
+        :param edges: list of tuple (vertex source, vertex destination, capacity of the edge, current value of the edge (optional))
         :param vertex_name: list of name for the vertex (the first oone is the source abd the last one the destination)
         """
 
@@ -30,6 +30,8 @@ class FlotMax:
             i = vertex_name.index(edge[0])
             j = vertex_name.index(edge[1])
             self.capacity[i, j] = edge[2]
+            if len(edge) == 4:
+                self.solution[i,j] = edge[3]
 
     def solve(self):
         while self.mark_vertex():
@@ -105,5 +107,4 @@ if __name__ == "__main__":
     maxFlot = FlotMax(vertex_name, edges)
 
     maxFlot.solve()
-    # print(maxFlot.solution)
     print(maxFlot)
