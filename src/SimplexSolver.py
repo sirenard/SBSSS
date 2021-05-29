@@ -318,7 +318,8 @@ class SimplexSolver:
             res = "\n* ({}) = ({})\n".format(", ".join(map(str, self.x)), ", ".join(map(str, current_sol)))
             sol = self.optimize * self.obj
             res += "* obj = {} = {}\n".format(Fraction(sol).limit_denominator(), sol)
-            res += "* Solution dual: ({}) = ({})\n".format(", ".join(["y{}".format(i) for i in range(self.m)]) ,", ".join(list(map(create_fraction,self.get_dual_solution()[:,0]))))
+            if not self.two_phase:
+                res += "* Solution dual: ({}) = ({})\n".format(", ".join(["y{}".format(i) for i in range(self.m)]) ,", ".join(list(map(create_fraction,self.get_dual_solution()[:,0]))))
         else:
             res = "no admissible solution found\n"
         return res
