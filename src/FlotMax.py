@@ -57,7 +57,7 @@ class FlotMax:
         if m[2]:
             self.solution[i, j] += value
         else:
-            self.solution[i, j] += value
+            self.solution[j, i] -= value
 
     def mark_vertex(self):
         self.mark = {}
@@ -65,7 +65,7 @@ class FlotMax:
         self.mark[self.vertex_name[0]] = (None, np.Inf, 1)
         L.append(0)
         while len(L) and self.vertex_name[-1] not in self.mark:
-            vertex = L.pop()
+            vertex = L.pop(0)
             current_val = self.mark[self.vertex_name[vertex]][1]
             for j in range(self.n_vertex):
                 if self.vertex_name[j] not in self.mark:
@@ -74,7 +74,7 @@ class FlotMax:
                         self.mark[self.vertex_name[j]] = (self.vertex_name[vertex], val, 1)
                         L.append(j)
                     elif self.capacity[j, vertex] and self.solution[j, vertex] > 0:
-                        val = min(current_val, self.solution[vertex, j])
+                        val = min(current_val, self.solution[j, vertex])
                         self.mark[self.vertex_name[j]] = (self.vertex_name[vertex], val, 0)
                         L.append(j)
 

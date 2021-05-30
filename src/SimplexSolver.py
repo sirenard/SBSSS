@@ -241,7 +241,10 @@ class SimplexSolver:
             b[count] = self.init_c[v,0]
             count += 1
 
-        return np.dot(np.linalg.inv(a),b)
+        try:
+            return np.dot(np.linalg.inv(a),b)
+        except:
+            return ["Fail, programme pas assez testé"]
 
 
 
@@ -335,7 +338,7 @@ if __name__ == "__main__":
     ]
     b = [24, 6, 2, 1]
 
-    # simplex_solver = SimplexSolver(c, A, b, ["x1", "x2", "s1", "s2", "s3", "s4"])
+    simplex_solver = SimplexSolver(c, A, b, ["x1", "x2", "s1", "s2", "s3", "s4"])
 
     c = [30, 40, 0, 0, 0]
     A = [
@@ -346,8 +349,8 @@ if __name__ == "__main__":
     b = [8, 11, 5]
     x = ["x_1", "x_2", "s_1", "s_2", "s_3"]
 
-    # simplex_solver = SimplexSolver(c, A, b, x, 1)
-    # simplex_solver.solve()
+    #simplex_solver = SimplexSolver(c, A, b, x, 1)
+    #simplex_solver.solve()
 
     c = [30, 40]
     A = [
@@ -381,7 +384,7 @@ if __name__ == "__main__":
     ]
     b = [50, 60, 0, 10]
     equality = ["<=", "<=", "<=", ">="]
-    simplex_solver = SimplexSolver(c, A, b, None, -1, equality=equality)
+    #simplex_solver = SimplexSolver(c, A, b, None, -1, equality=equality)
 
     simplex_solver.solve()
     print(simplex_solver)
