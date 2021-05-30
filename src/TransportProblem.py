@@ -116,6 +116,9 @@ class TransportProblem(SimplexSolver):
 
         return res
 
+    def _solution_str(self, dual_solution=False):
+        return super()._solution_str(False)
+
 
 if __name__ == "__main__":
     # exemple 1

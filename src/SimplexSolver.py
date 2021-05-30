@@ -260,7 +260,7 @@ class SimplexSolver:
             res += str(self.two_phase_simplex)
         if len(self.steps):
             res += "#" * self.two_phase + "# Resolution\n" + self._resolution_str()
-        res += "#" * self.two_phase + "# Optimal Solution\n" + self._solution_str()
+        res += "#" * self.two_phase + "# Optimal Solution\n" + self._solution_str(True)
 
         return res
 
@@ -308,7 +308,7 @@ class SimplexSolver:
 
         return res
 
-    def _solution_str(self):
+    def _solution_str(self, dual_solution=False):
         if len(self.steps):
             current_sol = []
             for i in range(self.n):
@@ -321,7 +321,7 @@ class SimplexSolver:
             res = "\n* ({}) = ({})\n".format(", ".join(map(str, self.x)), ", ".join(map(str, current_sol)))
             sol = self.optimize * self.obj
             res += "* obj = {} = {}\n".format(Fraction(sol).limit_denominator(), sol)
-            if not self.two_phase:
+            if dual_solution and not self.two_phase:
                 res += "* Solution dual: ({}) = ({})\n".format(", ".join(["y{}".format(i) for i in range(self.m)]) ,", ".join(list(map(create_fraction,self.get_dual_solution()[:,0]))))
         else:
             res = "no admissible solution found\n"
